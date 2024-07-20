@@ -61,9 +61,14 @@
             "enum": ["On", "Off"],
             "default": "On",
             "description": "Group code snippets from the same file under a single directory path section"
+        },
+        "box-it.filename": {
+            "type": "string",
+            "default": "box",
+            "description": "The filename for saving the text file"
         }
     }
-  }
+}
   },
   "scripts": {
     "lint": "eslint .",
