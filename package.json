@@ -37,27 +37,33 @@
         }
       ]
     },
-    "configuration": {
-      "title": "Box It",
-      "properties": {
+   "configuration": {
+    "title": "Box It",
+    "properties": {
         "box-it.folderStructure": {
-          "type": "string",
-          "enum": ["On", "Off"],
-          "default": "On",
-          "description": "Enable or disable folder structure in Box.txt"
+            "type": "string",
+            "enum": ["On", "Off"],
+            "default": "On",
+            "description": "Enable or disable folder structure in Box.txt"
         },
         "box-it.ignoreFolders": {
-          "type": "string",
-          "default": ".git,node_modules,.vscode",
-          "description": "Comma-separated list of folders to ignore in the folder structure"
+            "type": "string",
+            "default": ".git,node_modules,.vscode",
+            "description": "Comma-separated list of folders to ignore in the folder structure"
         },
         "box-it.detailedFolders": {
-          "type": "string",
-          "default": "",
-          "description": "Comma-separated list of folders to show in detail (including subfolders)"
+            "type": "string",
+            "default": "",
+            "description": "Comma-separated list of folders to show in detail (including subfolders)"
+        },
+        "box-it.GroupSections": {
+            "type": "string",
+            "enum": ["On", "Off"],
+            "default": "On",
+            "description": "Group code snippets from the same file under a single directory path section"
         }
-      }
     }
+  }
   },
   "scripts": {
     "lint": "eslint .",
