@@ -19,17 +19,15 @@ function activate(context) {
                         
                         let content = '';
                         if (!fs.existsSync(boxFilePath)) {
-                            // If Box.txt doesn't exist, create it with the folder structure
                             const config = vscode.workspace.getConfiguration('box-it');
-                            if (config.get('includeFolderStructure', true)) {
+                            const structureEnabled = config.get('folderStructure', 'On');
+                            if (structureEnabled === 'On') {
                                 content = getFolderStructure(rootPath) + '\n\n';
                             }
                         } else {
-                            // If Box.txt exists, read its content
                             content = fs.readFileSync(boxFilePath, 'utf8') + '\n\n';
                         }
                         
-                        // Append the new content
                         const relativePath = path.relative(rootPath, document.uri.fsPath);
                         content += `//${relativePath}\n${text}\n`;
                         
@@ -75,12 +73,11 @@ function activate(context) {
 
 function getFolderStructure(rootPath) {
     try {
-        const ignoreList = ['.git', 'node_modules', '.vscode'];
         const config = vscode.workspace.getConfiguration('box-it');
-        const maxDepth = config.get('maxFolderDepth', 3);
-        const maxFilesPerFolder = config.get('maxFilesPerFolder', 5);
+        const ignoreFolders = config.get('ignoreFolders', '').split(',').map(f => f.trim());
+        const detailedFolders = config.get('detailedFolders', '').split(',').map(f => f.trim());
         
-        function buildStructure(dir, prefix = '', depth = 0) {
+        function buildStructure(dir, isDetailed = false, prefix = '') {
             let result = '';
             const files = fs.readdirSync(dir).sort((a, b) => {
                 const aPath = path.join(dir, a);
@@ -92,39 +89,19 @@ function getFolderStructure(rootPath) {
                 return a.localeCompare(b);
             });
             
-            let fileCount = 0;
-            let dirCount = 0;
-            
             files.forEach((file, index) => {
-                if (ignoreList.includes(file)) return;
+                if (ignoreFolders.includes(file)) return;
                 
                 const filePath = path.join(dir, file);
                 const stats = fs.statSync(filePath);
                 const isDirectory = stats.isDirectory();
                 const isLast = index === files.length - 1;
                 
-                if (depth > 0 && depth >= maxDepth - 1) {
-                    if (isDirectory) {
-                        dirCount++;
-                        const icon = '📁';
-                        result += `${prefix}${isLast ? '└── ' : '├── '}${icon} ${file}\n`;
-                        result += `${prefix}${isLast ? '    ' : '│   '}└── ...\n`;
-                    } else {
-                        fileCount++;
-                        if (fileCount <= maxFilesPerFolder) {
-                            const icon = '📄';
-                            result += `${prefix}${isLast ? '└── ' : '├── '}${icon} ${file}\n`;
-                        } else if (fileCount === maxFilesPerFolder + 1) {
-                            result += `${prefix}└── ...\n`;
-                        }
-                    }
-                } else {
-                    const icon = isDirectory ? '📁' : '📄';
-                    result += `${prefix}${isLast ? '└── ' : '├── '}${icon} ${file}\n`;
-                    
-                    if (isDirectory) {
-                        result += buildStructure(filePath, prefix + (isLast ? '    ' : '│   '), depth + 1);
-                    }
+                const icon = isDirectory ? '📁' : '📄';
+                result += `${prefix}${isLast ? '└── ' : '├── '}${icon} ${file}\n`;
+                
+                if (isDirectory && (isDetailed || detailedFolders.includes(file))) {
+                    result += buildStructure(filePath, true, prefix + (isLast ? '    ' : '│   '));
                 }
             });
             
