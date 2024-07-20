@@ -1,0 +1,75 @@
+{
+  "name": "box-it",
+  "displayName": "Box it",
+  "description": "Simplify code sharing with your AI models",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.91.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "box-it.addToBox",
+        "title": "Add to box"
+      },
+      {
+        "command": "box-it.throwTheBox",
+        "title": "Throw the box"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "editorHasSelection",
+          "command": "box-it.addToBox",
+          "group": "navigation"
+        },
+        {
+          "when": "!editorHasSelection",
+          "command": "box-it.throwTheBox",
+          "group": "navigation"
+        }
+      ]
+    },
+   "configuration": {
+    "title": "Box It",
+    "properties": {
+      "box-it.includeFolderStructure": {
+        "type": "boolean",
+        "default": true,
+        "description": "Include folder structure when creating Box.txt"
+      },
+      "box-it.maxFolderDepth": {
+        "type": "number",
+        "default": 0,
+        "description": "Maximum depth of nested subfolders to display"
+      },
+      "box-it.maxFilesPerFolder": {
+        "type": "number",
+        "default": 8,
+        "description": "Maximum number of files to display in each folder at the deepest level"
+      }
+    }
+  }
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.91.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "18.x",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.5",
+    "@vscode/test-cli": "^0.0.9",
+    "@vscode/test-electron": "^2.4.0"
+  }
+}
