@@ -5,7 +5,7 @@
 "license":"MIT",
 "publisher": "dreamcatcher45",
   "description": "Simplify code sharing with your AI models",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "repository": {
     "type": "git",
     "url": "https://github.com/dreamcatcher45/box-it.git"
