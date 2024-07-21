@@ -13,7 +13,7 @@ Box It is a Visual Studio Code extension that simplifies code sharing with AI mo
 
 ## Demo
 
-![](https://github.com/Your_Repository_Name/Your_GIF_Name.gif)
+![](https://github.com/dreamcatcher45/box-it/blob/master/demo.gif)
 
 ## Usage
 
