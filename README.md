@@ -19,7 +19,7 @@ Box It is a Visual Studio Code extension that simplifies code sharing with AI mo
 
 ## Demo
 
-![Demo](https://github.com/dreamcatcher45/box-it/blob/master/demo.gif)
+Click [here](https://github.com/dreamcatcher45/box-it/blob/master/demo.gif) to see the demo video
 
 ## Extension Settings
 
