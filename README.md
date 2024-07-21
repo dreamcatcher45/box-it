@@ -11,6 +11,10 @@ Box It is a Visual Studio Code extension that simplifies code sharing with AI mo
 - **Customizable**: Configure ignored folders, detailed folders, and more through VSCode settings.
 - **Throw the Box**: Easily delete the box file when you're done.
 
+## Demo
+
+![](https://github.com/Your_Repository_Name/Your_GIF_Name.gif)
+
 ## Usage
 
 1. Select the code you want to add to the box.
