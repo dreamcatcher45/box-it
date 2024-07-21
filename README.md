@@ -11,15 +11,15 @@ Box It is a Visual Studio Code extension that simplifies code sharing with AI mo
 - **Customizable**: Configure ignored folders, detailed folders, and more through VSCode settings.
 - **Throw the Box**: Easily delete the box file when you're done.
 
-## Demo
-
-![](https://github.com/dreamcatcher45/box-it/blob/master/demo.gif)
-
 ## Usage
 
 1. Select the code you want to add to the box.
 2. Right-click and choose "Add to box" from the context menu.
 3. To delete the box file, right-click in the editor (without selection) and choose "Throw the box".
+
+## Demo
+
+![Demo](https://github.com/dreamcatcher45/box-it/blob/master/demo.gif)
 
 ## Extension Settings
 

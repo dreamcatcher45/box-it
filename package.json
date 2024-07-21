@@ -2,6 +2,8 @@
   "name": "box-it",
   "displayName": "Box it",
   "icon": "logo.png",
+"license":"MIT",
+"publisher": "dreamcatcher45",
   "description": "Simplify code sharing with your AI models",
   "version": "0.0.1",
   "repository": {
