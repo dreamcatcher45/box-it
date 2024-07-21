@@ -1,8 +1,13 @@
 {
   "name": "box-it",
   "displayName": "Box it",
+  "icon": "logo.png",
   "description": "Simplify code sharing with your AI models",
   "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/your-repo-name.git"
+  },
   "engines": {
     "vscode": "^1.91.0"
   },
