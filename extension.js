@@ -3,6 +3,8 @@ const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
 
+const { encoding_for_model } = require("tiktoken");
+
 const commentsData = {
     "comments": {
         "SingleLineComment": [
@@ -35,6 +37,14 @@ const commentsData = {
         ]
     }
 };
+
+function countTokens(text) {
+    const gpt4Enc = encoding_for_model("gpt-4-0125-preview");
+    const encoded = gpt4Enc.encode(text);
+    const tokenCount = encoded.length;
+    gpt4Enc.free();
+    return tokenCount;
+}
 
 function getCommentSymbols(filePath) {
     const extension = path.extname(filePath).toLowerCase();
@@ -87,13 +97,18 @@ function removeComments(text, filePath) {
 }
 
 function minifyText(text, filePath, removeCommentsFlag) {
+    console.log("Original text token count:", countTokens(text));
+    
     let processedText = text;
     if (removeCommentsFlag) {
         processedText = removeComments(processedText, filePath);
     }
-    return processedText.replace(/\s+/g, ' ').trim();
+    processedText = processedText.replace(/\s+/g, ' ').trim();
+    
+    console.log("Minified text token count:", countTokens(processedText));
+    
+    return processedText;
 }
-
 
 function activate(context) {
     let addToBoxCommand = vscode.commands.registerCommand('box-it.addToBox', function () {
