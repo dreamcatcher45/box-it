@@ -4,8 +4,8 @@
   "icon": "logo.png",
   "license": "MIT",
   "publisher": "dreamcatcher45",
-  "description": "Simplify code sharing with your AI models",
-  "version": "0.0.2",
+  "description": "Optimize your code sharing by compiling snippets into a single file while utilizing minification features",
+  "version": "0.0.3",
   "repository": {
     "type": "git",
     "url": "https://github.com/dreamcatcher45/box-it.git"
@@ -17,6 +17,23 @@
     "AI",
     "Chat"
   ],
+  "tags": [
+    "code sharing",
+    "privacy",
+    "minification",
+    "snippet management",
+    "developer tools",
+    "VSCode extension",
+    "code optimization",
+    "optimization",
+    "folder structure",
+    "token analytics",
+    "token",
+    "ai",
+    "prompt",
+    "programming",
+    "productivity"
+],
   "activationEvents": [],
   "main": "./extension.js",
   "contributes": {
