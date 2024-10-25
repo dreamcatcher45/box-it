@@ -3,12 +3,110 @@ const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
 
+const commentsData = {
+    "comments": {
+        "SingleLineComment": [
+            {
+                "extensions": ".c, .cpp, .java, .js, .cs, .php, .go, .swift, .kt, .rs, .vb, .ts, .d.ts, .m",
+                "symbol": "//"
+            },
+            {
+                "extensions": ".py, .rb, .pl, .r, .sb",
+                "symbol": "#"
+            },
+            {
+                "extensions": ".bas, .vbs, .dart",
+                "symbol": "'"
+            }
+        ],
+        "MultiLineComment": [
+            {
+                "extensions": ".c, .cpp, .java, .js, .cs, .php, .go, .swift, .kt, .rs, .sql, .ts, .d.ts",
+                "symbol": "/* ... */"
+            },
+            {
+                "extensions": ".c, .cpp, .java, .js, .cs, .php, .go, .swift, .kt, .rs, .sql, .ts, .d.ts",
+                "symbol": "/** ... */"
+            },
+            {
+                "extensions": ".html, .css",
+                "symbol": "<!-- ... -->"
+            },
+            {
+                "extensions": ".py",
+                "symbol": "''' ... '''"
+            }
+        ]
+    }
+};
+
+function getCommentSymbols(filePath) {
+    // Handle .d.ts files specifically
+    const extension = filePath.endsWith('.d.ts') ? '.d.ts' : path.extname(filePath).toLowerCase();
+    const symbols = { single: [], multi: [] };
+    
+    commentsData.comments.SingleLineComment.forEach(item => {
+        const extensions = item.extensions.toLowerCase().split(',').map(ext => ext.trim());
+        if (extensions.includes(extension)) {
+            symbols.single.push(item.symbol);
+        }
+    });
+
+    commentsData.comments.MultiLineComment.forEach(item => {
+        const extensions = item.extensions.toLowerCase().split(',').map(ext => ext.trim());
+        if (extensions.includes(extension)) {
+            const [start, end] = item.symbol.split('...');
+            symbols.multi.push({
+                start: start.trim(),
+                end: end.trim()
+            });
+        }
+    });
+
+    return symbols;
+}
+
+function removeComments(text, filePath) {
+    const symbols = getCommentSymbols(filePath);
+    let processedText = text;
+
+    // Remove JSDoc and multi-line comments first
+    symbols.multi.forEach(({start, end}) => {
+        const escStart = start.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const escEnd = end.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // Handle both /** ... */ and /* ... */ with proper whitespace and newline handling
+        const regex = new RegExp(escStart + '[\\s\\S]*?' + escEnd + '\\s*', 'g');
+        processedText = processedText.replace(regex, '');
+    });
+
+    // Remove single-line comments
+    symbols.single.forEach(symbol => {
+        const escSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(escSymbol + '.*?(?:\r\n|\r|\n|$)', 'g');
+        processedText = processedText.replace(regex, '\n');
+    });
+
+    // Clean up any extra blank lines created by comment removal
+    processedText = processedText.replace(/\n\s*\n\s*\n/g, '\n\n');
+    
+    return processedText;
+}
+
+function minifyText(text, filePath, removeCommentsFlag) {
+    let processedText = text;
+    if (removeCommentsFlag) {
+        processedText = removeComments(processedText, filePath);
+    }
+    return processedText.replace(/\s+/g, ' ').trim();
+}
+
 function activate(context) {
     let addToBoxCommand = vscode.commands.registerCommand('box-it.addToBox', function () {
         try {
             const editor = vscode.window.activeTextEditor;
             if (editor) {
                 const document = editor.document;
+                const filePath = document.uri.fsPath;
                 const selection = editor.selection;
                 const text = document.getText(selection);
 
@@ -20,6 +118,7 @@ function activate(context) {
                         const filename = config.get('filename', 'box');
                         const boxFilePath = path.join(rootPath, `${filename}.txt`);
                         const minifyEnabled = config.get('minify', 'Off');
+                        const removeCommentsEnabled = config.get('removeComments', 'Off');
 
                         let content = '';
                         let existingContent = '';
@@ -32,21 +131,19 @@ function activate(context) {
                             }
                         }
 
-                        const relativePath = path.relative(rootPath, document.uri.fsPath);
+                        const relativePath = path.relative(rootPath, filePath);
                         const groupSections = config.get('GroupSections', 'Off');
                         const pathMarker = minifyEnabled === 'On' ? 
                             `[path:${relativePath}]` : 
                             `//${relativePath}`;
 
                         let processedText = minifyEnabled === 'On' ? 
-                            text.replace(/\s+/g, ' ').trim() : 
-                            text;
+                            minifyText(text, filePath, removeCommentsEnabled === 'On') : 
+                            removeCommentsEnabled === 'On' ? removeComments(text, filePath) : text;
 
-                        // Check if a section for this file already exists
                         const index = existingContent.indexOf(pathMarker);
 
                         if (groupSections === 'On' && index !== -1) {
-                            // Append to existing section
                             const start = index + pathMarker.length;
                             const nextSectionIndex = minifyEnabled === 'On' ? 
                                 existingContent.indexOf('[path:', start) : 
@@ -65,7 +162,6 @@ function activate(context) {
                                     (minifyEnabled === 'On' ? ' ' : '\n');
                             }
                         } else {
-                            // Create new section
                             content += existingContent + 
                                 (existingContent ? (minifyEnabled === 'On' ? ' ' : '\n\n') : '') + 
                                 pathMarker + 
@@ -94,11 +190,14 @@ function activate(context) {
             const editor = vscode.window.activeTextEditor;
             if (editor) {
                 const document = editor.document;
+                const filePath = document.uri.fsPath;
                 const selection = editor.selection;
                 const text = document.getText(selection);
+                const config = vscode.workspace.getConfiguration('box-it');
+                const removeCommentsEnabled = config.get('removeComments', 'Off');
 
                 if (text) {
-                    const minifiedText = text.replace(/\s+/g, ' ').trim();
+                    const minifiedText = minifyText(text, filePath, removeCommentsEnabled === 'On');
                     vscode.env.clipboard.writeText(minifiedText);
                     vscode.window.showInformationMessage('Minified text copied to clipboard');
                 } else {

@@ -97,6 +97,15 @@
           ],
           "default": "Off",
           "description": "Enable minified format with [path:] syntax and removed whitespace"
+        },
+        "box-it.removeComments": {
+          "type": "string",
+          "enum": [
+            "On",
+            "Off"
+          ],
+          "default": "Off",
+          "description": "Remove comments when minifying or adding to box"
         }
       }
     }
