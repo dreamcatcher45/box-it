@@ -1,11 +1,11 @@
 {
   "name": "box-it",
   "displayName": "Box it",
-  "icon": "logo.png",
+  "icon": "icon.png",
   "license": "MIT",
   "publisher": "dreamcatcher45",
   "description": "Optimize your code sharing by compiling snippets into a single file while utilizing minification features",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/dreamcatcher45/box-it.git"

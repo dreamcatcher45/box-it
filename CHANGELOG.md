@@ -1,6 +1,6 @@
 # Change Log
 
-## [0.0.3] - 2024-10-25
+## [0.0.4] - 2024-10-25
 
 ### Added
 - New minification feature with [path:] syntax and whitespace removal
