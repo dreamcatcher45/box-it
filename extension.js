@@ -7,7 +7,7 @@ const commentsData = {
     "comments": {
         "SingleLineComment": [
             {
-                "extensions": ".c, .cpp, .java, .js, .cs, .php, .go, .swift, .kt, .rs, .vb, .ts, .d.ts, .m",
+                "extensions": ".c, .cpp, .java, .js, .cs, .php, .go, .swift, .kt, .rs, .vb, .ts, .m",
                 "symbol": "//"
             },
             {
@@ -21,12 +21,8 @@ const commentsData = {
         ],
         "MultiLineComment": [
             {
-                "extensions": ".c, .cpp, .java, .js, .cs, .php, .go, .swift, .kt, .rs, .sql, .ts, .d.ts",
+                "extensions": ".c, .cpp, .java, .js, .cs, .php, .go, .swift, .kt, .rs, .sql, .ts",
                 "symbol": "/* ... */"
-            },
-            {
-                "extensions": ".c, .cpp, .java, .js, .cs, .php, .go, .swift, .kt, .rs, .sql, .ts, .d.ts",
-                "symbol": "/** ... */"
             },
             {
                 "extensions": ".html, .css",
@@ -41,8 +37,7 @@ const commentsData = {
 };
 
 function getCommentSymbols(filePath) {
-    // Handle .d.ts files specifically
-    const extension = filePath.endsWith('.d.ts') ? '.d.ts' : path.extname(filePath).toLowerCase();
+    const extension = path.extname(filePath).toLowerCase();
     const symbols = { single: [], multi: [] };
     
     commentsData.comments.SingleLineComment.forEach(item => {
@@ -70,12 +65,11 @@ function removeComments(text, filePath) {
     const symbols = getCommentSymbols(filePath);
     let processedText = text;
 
-    // Remove JSDoc and multi-line comments first
+    // Remove multi-line comments first
     symbols.multi.forEach(({start, end}) => {
         const escStart = start.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const escEnd = end.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        // Handle both /** ... */ and /* ... */ with proper whitespace and newline handling
-        const regex = new RegExp(escStart + '[\\s\\S]*?' + escEnd + '\\s*', 'g');
+        const regex = new RegExp(escStart + '[\\s\\S]*?' + escEnd, 'g');
         processedText = processedText.replace(regex, '');
     });
 
@@ -86,7 +80,7 @@ function removeComments(text, filePath) {
         processedText = processedText.replace(regex, '\n');
     });
 
-    // Clean up any extra blank lines created by comment removal
+    // Clean up any extra blank lines
     processedText = processedText.replace(/\n\s*\n\s*\n/g, '\n\n');
     
     return processedText;
@@ -99,6 +93,7 @@ function minifyText(text, filePath, removeCommentsFlag) {
     }
     return processedText.replace(/\s+/g, ' ').trim();
 }
+
 
 function activate(context) {
     let addToBoxCommand = vscode.commands.registerCommand('box-it.addToBox', function () {
