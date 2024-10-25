@@ -248,12 +248,6 @@ function activate(context) {
                     });
                     context.globalState.update('minificationAnalytics', currentAnalytics);
 
-                    // logging
-                    console.log('Saving analytics:', {
-                        date: new Date().toISOString(),
-                        originalTokens: minifyResult.originalTokens,
-                        minifiedTokens: minifyResult.minifiedTokens
-                    });
 
                     // Show size difference if enabled
                     if (showSizeDiff === 'On') {
@@ -277,7 +271,7 @@ function activate(context) {
         try {
             const panel = vscode.window.createWebviewPanel(
                 'boxItAnalytics',
-                'Box It - Minification Analytics',
+                'Box It - Analytics',
                 vscode.ViewColumn.One,
                 {
                     enableScripts: true
@@ -286,30 +280,212 @@ function activate(context) {
     
             // Get analytics data
             const analytics = context.globalState.get('minificationAnalytics', []);
-            
-            // Create HTML content
-            const htmlPath = path.join(context.extensionPath, 'analytics.html');
-            let htmlContent = fs.readFileSync(htmlPath, 'utf8');
-            
-            // Replace placeholder with actual data
-            // Note the added JSON.stringify to properly format the data
-            htmlContent = htmlContent.replace(
-                '/*ANALYTICS_DATA*/', 
-                JSON.stringify(analytics, null, 2)
-            );
-            
-            panel.webview.html = htmlContent;
     
-            // Add error handling for empty data
-            if (!analytics || analytics.length === 0) {
-                vscode.window.showInformationMessage('No analytics data available yet. Try minifying some text first!');
-            }
+            // Create the HTML content directly instead of reading from file
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Box It - Analytics</title>
+                    <style>
+                        body {
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+                            margin: 20px;
+                            padding: 0;
+                            background-color: var(--vscode-editor-background);
+                            color: var(--vscode-editor-foreground);
+                        }
+    
+                        .dashboard {
+                            display: grid;
+                            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                            gap: 20px;
+                            margin-bottom: 30px;
+                        }
+    
+                        .metric-card {
+                            background-color: var(--vscode-editor-selectionBackground);
+                            border-radius: 8px;
+                            padding: 20px;
+                            text-align: center;
+                        }
+    
+                        .metric-value {
+                            font-size: 24px;
+                            font-weight: bold;
+                            margin: 10px 0;
+                        }
+    
+                        .metric-label {
+                            font-size: 14px;
+                            opacity: 0.8;
+                        }
+    
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-top: 20px;
+                            background-color: var(--vscode-editor-selectionBackground);
+                            border-radius: 8px;
+                            overflow: hidden;
+                        }
+    
+                        th, td {
+                            padding: 12px;
+                            text-align: left;
+                            border-bottom: 1px solid var(--vscode-editor-lineHighlightBackground);
+                        }
+    
+                        th {
+                            background-color: var(--vscode-editor-selectionHighlightBackground);
+                            font-weight: bold;
+                        }
+    
+                        tr:hover {
+                            background-color: var(--vscode-editor-hoverHighlightBackground);
+                        }
+    
+                        .savings-positive {
+                            color: #4caf50;
+                        }
+    
+                        h1 {
+                            margin-bottom: 30px;
+                            color: var(--vscode-editor-foreground);
+                        }
+    
+                        .table-container {
+                            overflow-x: auto;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>Box It - Analytics</h1>
+                    
+                    <div class="dashboard">
+                        <div class="metric-card">
+                            <div class="metric-label">Total Minifications</div>
+                            <div class="metric-value" id="totalEntries">0</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Total Original Tokens</div>
+                            <div class="metric-value" id="totalOriginal">0</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Total Minified Tokens</div>
+                            <div class="metric-value" id="totalMinified">0</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Total Tokens Saved</div>
+                            <div class="metric-value savings-positive" id="totalSaved">0</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Average Reduction</div>
+                            <div class="metric-value savings-positive" id="avgReduction">0%</div>
+                        </div>
+                    </div>
+    
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>No.</th>
+                                    <th>Date & Time</th>
+                                    <th>Original Tokens</th>
+                                    <th>Minified Tokens</th>
+                                    <th>Tokens Saved</th>
+                                    <th>Reduction %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analyticsTable">
+                            </tbody>
+                        </table>
+                    </div>
+    
+                    <script>
+                        // Format number to K or M
+                        function formatNumber(num) {
+                            if (num >= 1000000) {
+                                return (num / 1000000).toFixed(1) + 'M';
+                            } else if (num >= 1000) {
+                                return (num / 1000).toFixed(1) + 'K';
+                            }
+                            return num.toString();
+                        }
+    
+                        // Analytics data injected by extension
+                        const analyticsData = ${JSON.stringify(analytics)};
+    
+                        if (!analyticsData || analyticsData.length === 0) {
+                            document.querySelector('.dashboard').innerHTML = '<div class="metric-card"><div class="metric-label">No data available</div><div class="metric-value">Try minifying some text first!</div></div>';
+                            document.querySelector('.table-container').style.display = 'none';
+                        }
+    
+                        function formatDate(dateString) {
+                            return new Date(dateString).toLocaleString();
+                        }
+    
+                        function updateDashboard() {
+                            const totalEntries = analyticsData.length;
+                            const totalOriginal = analyticsData.reduce((sum, entry) => sum + entry.originalTokens, 0);
+                            const totalMinified = analyticsData.reduce((sum, entry) => sum + entry.minifiedTokens, 0);
+                            const totalSaved = totalOriginal - totalMinified;
+                            const avgReduction = totalOriginal ? ((totalSaved / totalOriginal) * 100).toFixed(1) : '0';
+    
+                            document.getElementById('totalEntries').textContent = totalEntries;
+                            document.getElementById('totalOriginal').textContent = formatNumber(totalOriginal);
+                            document.getElementById('totalMinified').textContent = formatNumber(totalMinified);
+                            document.getElementById('totalSaved').textContent = formatNumber(totalSaved);
+                            document.getElementById('avgReduction').textContent = \`\${avgReduction}%\`;
+                        }
+    
+                        function populateTable() {
+                            const tbody = document.getElementById('analyticsTable');
+                            tbody.innerHTML = '';
+    
+                            analyticsData.forEach((data, index) => {
+                                const tokensSaved = data.originalTokens - data.minifiedTokens;
+                                const reductionPercent = ((tokensSaved / data.originalTokens) * 100).toFixed(1);
+    
+                                const row = document.createElement('tr');
+                                row.innerHTML = \`
+                                    <td>\${index + 1}</td>
+                                    <td>\${formatDate(data.date)}</td>
+                                    <td>\${formatNumber(data.originalTokens)}</td>
+                                    <td>\${formatNumber(data.minifiedTokens)}</td>
+                                    <td class="savings-positive">\${formatNumber(tokensSaved)}</td>
+                                    <td class="savings-positive">\${reductionPercent}%</td>
+                                \`;
+                                tbody.appendChild(row);
+                            });
+                        }
+    
+                        updateDashboard();
+                        populateTable();
+                    </script>
+                </body>
+                </html>
+            `;
+    
+            // Set the webview's HTML content
+            panel.webview.html = htmlContent;
+            
+            // Add message listener for debugging
+            panel.webview.onDidReceiveMessage(
+                message => {
+                    console.log('Received message from webview:', message);
+                },
+                undefined,
+                context.subscriptions
+            );
+    
         } catch (error) {
             vscode.window.showErrorMessage(`Error showing analytics: ${error.message}`);
-            console.error(error);
+            console.error('Error in showAnalyticsCommand:', error);
         }
     });
-
 
     let throwTheBoxCommand = vscode.commands.registerCommand('box-it.throwTheBox', function () {
         try {
