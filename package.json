@@ -32,6 +32,10 @@
       {
         "command": "box-it.copyMinified",
         "title": "Copy minified"
+      },
+      {
+        "command": "box-it.showMinifiedAnalytics",
+        "title": "Show Minified Analytics"
       }
     ],
     "menus": {
@@ -106,7 +110,16 @@
           ],
           "default": "Off",
           "description": "Remove comments when minifying or adding to box"
-        }
+        },
+        "box-it.showSizeDifference": {
+  "type": "string",
+  "enum": [
+    "On",
+    "Off"
+  ],
+  "default": "On",
+  "description": "Show token count difference in notifications"
+}
       }
     }
   },

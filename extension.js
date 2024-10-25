@@ -2,8 +2,8 @@
 const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
-
 const { encoding_for_model } = require("tiktoken");
+
 
 const commentsData = {
     "comments": {
@@ -97,7 +97,7 @@ function removeComments(text, filePath) {
 }
 
 function minifyText(text, filePath, removeCommentsFlag) {
-    console.log("Original text token count:", countTokens(text));
+    const originalTokens = countTokens(text);
     
     let processedText = text;
     if (removeCommentsFlag) {
@@ -105,12 +105,18 @@ function minifyText(text, filePath, removeCommentsFlag) {
     }
     processedText = processedText.replace(/\s+/g, ' ').trim();
     
-    console.log("Minified text token count:", countTokens(processedText));
+    const minifiedTokens = countTokens(processedText);
     
-    return processedText;
+    return {
+        text: processedText,
+        originalTokens,
+        minifiedTokens
+    };
 }
 
 function activate(context) {
+
+    // globalState = context.globalState;
     let addToBoxCommand = vscode.commands.registerCommand('box-it.addToBox', function () {
         try {
             const editor = vscode.window.activeTextEditor;
@@ -129,6 +135,7 @@ function activate(context) {
                         const boxFilePath = path.join(rootPath, `${filename}.txt`);
                         const minifyEnabled = config.get('minify', 'Off');
                         const removeCommentsEnabled = config.get('removeComments', 'Off');
+                        const showSizeDiff = config.get('showSizeDifference', 'On');
 
                         let content = '';
                         let existingContent = '';
@@ -147,12 +154,14 @@ function activate(context) {
                             `[path:${relativePath}]` : 
                             `//${relativePath}`;
 
-                        let processedText = minifyEnabled === 'On' ? 
+                        let minifyResult = minifyEnabled === 'On' ? 
                             minifyText(text, filePath, removeCommentsEnabled === 'On') : 
-                            removeCommentsEnabled === 'On' ? removeComments(text, filePath) : text;
+                            { text: removeCommentsEnabled === 'On' ? removeComments(text, filePath) : text };
 
+                        const processedText = minifyResult.text;
+
+                        // Handle content with sections
                         const index = existingContent.indexOf(pathMarker);
-
                         if (groupSections === 'On' && index !== -1) {
                             const start = index + pathMarker.length;
                             const nextSectionIndex = minifyEnabled === 'On' ? 
@@ -181,7 +190,26 @@ function activate(context) {
                         }
 
                         fs.writeFileSync(boxFilePath, content);
-                        vscode.window.showInformationMessage('Successfully Added to Box');
+                        
+                        // Save analytics if minification was performed
+                        if (minifyEnabled === 'On' && minifyResult.originalTokens) {
+                            const currentAnalytics = context.globalState.get('minificationAnalytics', []);
+                            currentAnalytics.push({
+                                date: new Date().toISOString(),
+                                originalTokens: minifyResult.originalTokens,
+                                minifiedTokens: minifyResult.minifiedTokens
+                            });
+                            context.globalState.update('minificationAnalytics', currentAnalytics);
+                        }
+
+                        // Show size difference if enabled
+                        if (showSizeDiff === 'On' && minifyEnabled === 'On') {
+                            vscode.window.showInformationMessage(
+                                `Successfully Added to Box (minified from ${minifyResult.originalTokens} to ${minifyResult.minifiedTokens} tokens)`
+                            );
+                        } else {
+                            vscode.window.showInformationMessage('Successfully Added to Box');
+                        }
                     }
                 } else {
                     vscode.window.showWarningMessage('No text selected to add to Box');
@@ -205,11 +233,36 @@ function activate(context) {
                 const text = document.getText(selection);
                 const config = vscode.workspace.getConfiguration('box-it');
                 const removeCommentsEnabled = config.get('removeComments', 'Off');
+                const showSizeDiff = config.get('showSizeDifference', 'On');
 
                 if (text) {
-                    const minifiedText = minifyText(text, filePath, removeCommentsEnabled === 'On');
-                    vscode.env.clipboard.writeText(minifiedText);
-                    vscode.window.showInformationMessage('Minified text copied to clipboard');
+                    const minifyResult = minifyText(text, filePath, removeCommentsEnabled === 'On');
+                    vscode.env.clipboard.writeText(minifyResult.text);
+                    
+                    // Save analytics
+                    const currentAnalytics = context.globalState.get('minificationAnalytics', []);
+                    currentAnalytics.push({
+                        date: new Date().toISOString(),
+                        originalTokens: minifyResult.originalTokens,
+                        minifiedTokens: minifyResult.minifiedTokens
+                    });
+                    context.globalState.update('minificationAnalytics', currentAnalytics);
+
+                    // logging
+                    console.log('Saving analytics:', {
+                        date: new Date().toISOString(),
+                        originalTokens: minifyResult.originalTokens,
+                        minifiedTokens: minifyResult.minifiedTokens
+                    });
+
+                    // Show size difference if enabled
+                    if (showSizeDiff === 'On') {
+                        vscode.window.showInformationMessage(
+                            `Minified text copied to clipboard (minified from ${minifyResult.originalTokens} to ${minifyResult.minifiedTokens} tokens)`
+                        );
+                    } else {
+                        vscode.window.showInformationMessage('Minified text copied to clipboard');
+                    }
                 } else {
                     vscode.window.showWarningMessage('No text selected to minify');
                 }
@@ -219,6 +272,44 @@ function activate(context) {
             console.error(error);
         }
     });
+
+    let showAnalyticsCommand = vscode.commands.registerCommand('box-it.showMinifiedAnalytics', function () {
+        try {
+            const panel = vscode.window.createWebviewPanel(
+                'boxItAnalytics',
+                'Box It - Minification Analytics',
+                vscode.ViewColumn.One,
+                {
+                    enableScripts: true
+                }
+            );
+    
+            // Get analytics data
+            const analytics = context.globalState.get('minificationAnalytics', []);
+            
+            // Create HTML content
+            const htmlPath = path.join(context.extensionPath, 'analytics.html');
+            let htmlContent = fs.readFileSync(htmlPath, 'utf8');
+            
+            // Replace placeholder with actual data
+            // Note the added JSON.stringify to properly format the data
+            htmlContent = htmlContent.replace(
+                '/*ANALYTICS_DATA*/', 
+                JSON.stringify(analytics, null, 2)
+            );
+            
+            panel.webview.html = htmlContent;
+    
+            // Add error handling for empty data
+            if (!analytics || analytics.length === 0) {
+                vscode.window.showInformationMessage('No analytics data available yet. Try minifying some text first!');
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage(`Error showing analytics: ${error.message}`);
+            console.error(error);
+        }
+    });
+
 
     let throwTheBoxCommand = vscode.commands.registerCommand('box-it.throwTheBox', function () {
         try {
@@ -244,7 +335,8 @@ function activate(context) {
         }
     });
 
-    context.subscriptions.push(addToBoxCommand, throwTheBoxCommand, copyMinifiedCommand);
+    context.subscriptions.push(addToBoxCommand, throwTheBoxCommand, copyMinifiedCommand, showAnalyticsCommand);
+
 }
 
 function getFolderStructure(rootPath) {
