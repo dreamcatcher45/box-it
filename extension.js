@@ -1,3 +1,4 @@
+// extension.js
 const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
@@ -18,12 +19,13 @@ function activate(context) {
                         const config = vscode.workspace.getConfiguration('box-it');
                         const filename = config.get('filename', 'box');
                         const boxFilePath = path.join(rootPath, `${filename}.txt`);
+                        const minifyEnabled = config.get('minify', 'Off');
 
                         let content = '';
                         let existingContent = '';
                         if (fs.existsSync(boxFilePath)) {
                             existingContent = fs.readFileSync(boxFilePath, 'utf8');
-                        } else {
+                        } else if (minifyEnabled === 'Off') {
                             const structureEnabled = config.get('folderStructure', 'On');
                             if (structureEnabled === 'On') {
                                 content = getFolderStructure(rootPath) + '\n\n';
@@ -32,25 +34,44 @@ function activate(context) {
 
                         const relativePath = path.relative(rootPath, document.uri.fsPath);
                         const groupSections = config.get('GroupSections', 'Off');
+                        const pathMarker = minifyEnabled === 'On' ? 
+                            `[path:${relativePath}]` : 
+                            `//${relativePath}`;
+
+                        let processedText = minifyEnabled === 'On' ? 
+                            text.replace(/\s+/g, ' ').trim() : 
+                            text;
 
                         // Check if a section for this file already exists
-                        const pathMarker = `\n\n//${relativePath}\n\n`;
-                        const index = existingContent.indexOf(`//${relativePath}`);
+                        const index = existingContent.indexOf(pathMarker);
 
                         if (groupSections === 'On' && index !== -1) {
                             // Append to existing section
-                            const start = index + `//${relativePath}`.length;
-                            const nextSectionIndex = existingContent.indexOf('//', start);
+                            const start = index + pathMarker.length;
+                            const nextSectionIndex = minifyEnabled === 'On' ? 
+                                existingContent.indexOf('[path:', start) : 
+                                existingContent.indexOf('//', start);
+
                             if (nextSectionIndex !== -1) {
-                                // Append text at the end of the current section
-                                content = existingContent.substring(0, nextSectionIndex) + existingContent.substring(start, nextSectionIndex) + '\n' + text + '\n' + existingContent.substring(nextSectionIndex);
+                                content = existingContent.substring(0, nextSectionIndex) + 
+                                    (minifyEnabled === 'On' ? '' : existingContent.substring(start, nextSectionIndex) + '\n') + 
+                                    processedText + 
+                                    (minifyEnabled === 'On' ? ' ' : '\n') + 
+                                    existingContent.substring(nextSectionIndex);
                             } else {
-                                // Append text at the end of the file
-                                content = existingContent.substring(0, start) + existingContent.substring(start) + '\n' + text + '\n';
+                                content = existingContent.substring(0, start) + 
+                                    (minifyEnabled === 'On' ? '' : existingContent.substring(start) + '\n') + 
+                                    processedText + 
+                                    (minifyEnabled === 'On' ? ' ' : '\n');
                             }
                         } else {
                             // Create new section
-                            content += existingContent + (existingContent ? '\n\n' : '') + `//${relativePath}\n\n${text}\n\n`;
+                            content += existingContent + 
+                                (existingContent ? (minifyEnabled === 'On' ? ' ' : '\n\n') : '') + 
+                                pathMarker + 
+                                (minifyEnabled === 'On' ? ' ' : '\n\n') + 
+                                processedText + 
+                                (minifyEnabled === 'On' ? ' ' : '\n\n');
                         }
 
                         fs.writeFileSync(boxFilePath, content);
@@ -64,6 +85,28 @@ function activate(context) {
             }
         } catch (error) {
             vscode.window.showErrorMessage(`Error in addToBox: ${error.message}`);
+            console.error(error);
+        }
+    });
+
+    let copyMinifiedCommand = vscode.commands.registerCommand('box-it.copyMinified', function () {
+        try {
+            const editor = vscode.window.activeTextEditor;
+            if (editor) {
+                const document = editor.document;
+                const selection = editor.selection;
+                const text = document.getText(selection);
+
+                if (text) {
+                    const minifiedText = text.replace(/\s+/g, ' ').trim();
+                    vscode.env.clipboard.writeText(minifiedText);
+                    vscode.window.showInformationMessage('Minified text copied to clipboard');
+                } else {
+                    vscode.window.showWarningMessage('No text selected to minify');
+                }
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage(`Error in copyMinified: ${error.message}`);
             console.error(error);
         }
     });
@@ -92,7 +135,7 @@ function activate(context) {
         }
     });
 
-    context.subscriptions.push(addToBoxCommand, throwTheBoxCommand);
+    context.subscriptions.push(addToBoxCommand, throwTheBoxCommand, copyMinifiedCommand);
 }
 
 function getFolderStructure(rootPath) {

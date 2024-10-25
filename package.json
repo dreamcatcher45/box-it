@@ -2,8 +2,8 @@
   "name": "box-it",
   "displayName": "Box it",
   "icon": "logo.png",
-"license":"MIT",
-"publisher": "dreamcatcher45",
+  "license": "MIT",
+  "publisher": "dreamcatcher45",
   "description": "Simplify code sharing with your AI models",
   "version": "0.0.2",
   "repository": {
@@ -14,10 +14,10 @@
     "vscode": "^1.91.0"
   },
   "categories": [
-    "AI","Chat"
+    "AI",
+    "Chat"
   ],
-  "activationEvents": [
-  ],
+  "activationEvents": [],
   "main": "./extension.js",
   "contributes": {
     "commands": [
@@ -28,6 +28,10 @@
       {
         "command": "box-it.throwTheBox",
         "title": "Throw the box"
+      },
+      {
+        "command": "box-it.copyMinified",
+        "title": "Copy minified"
       }
     ],
     "menus": {
@@ -38,44 +42,64 @@
           "group": "navigation"
         },
         {
+          "when": "editorHasSelection",
+          "command": "box-it.copyMinified",
+          "group": "navigation"
+        },
+        {
           "when": "!editorHasSelection",
           "command": "box-it.throwTheBox",
           "group": "navigation"
         }
       ]
     },
-   "configuration": {
-    "title": "Box It",
-    "properties": {
+    "configuration": {
+      "title": "Box It",
+      "properties": {
         "box-it.folderStructure": {
-            "type": "string",
-            "enum": ["On", "Off"],
-            "default": "On",
-            "description": "Enable or disable folder structure in Box.txt"
+          "type": "string",
+          "enum": [
+            "On",
+            "Off"
+          ],
+          "default": "On",
+          "description": "Enable or disable folder structure in Box.txt"
         },
         "box-it.ignoreFolders": {
-            "type": "string",
-            "default": ".git,node_modules,.vscode",
-            "description": "Comma-separated list of folders to ignore in the folder structure"
+          "type": "string",
+          "default": ".git,node_modules,.vscode",
+          "description": "Comma-separated list of folders to ignore in the folder structure"
         },
         "box-it.detailedFolders": {
-            "type": "string",
-            "default": "",
-            "description": "Comma-separated list of folders to show in detail (including subfolders)"
+          "type": "string",
+          "default": "",
+          "description": "Comma-separated list of folders to show in detail (including subfolders)"
         },
         "box-it.GroupSections": {
-            "type": "string",
-            "enum": ["On", "Off"],
-            "default": "On",
-            "description": "Group code snippets from the same file under a single directory path section"
+          "type": "string",
+          "enum": [
+            "On",
+            "Off"
+          ],
+          "default": "On",
+          "description": "Group code snippets from the same file under a single directory path section"
         },
         "box-it.filename": {
-            "type": "string",
-            "default": "box",
-            "description": "The filename for saving the text file"
+          "type": "string",
+          "default": "box",
+          "description": "The filename for saving the text file"
+        },
+        "box-it.minify": {
+          "type": "string",
+          "enum": [
+            "On",
+            "Off"
+          ],
+          "default": "Off",
+          "description": "Enable minified format with [path:] syntax and removed whitespace"
         }
+      }
     }
-}
   },
   "scripts": {
     "lint": "eslint .",
