@@ -2,6 +2,8 @@
 
 Box It is a Visual Studio Code extension that simplifies code sharing with AI models while respecting your privacy. It allows you to selectively add code snippets to a single file, optionally including folder structure information, making it easy to provide context to AI models without sharing your entire codebase.
 
+Box It's minification process optimizes code through intelligent whitespace removal, comment stripping, and path handling, reducing token counts while preserving functionality - making your AI model interactions more cost-effective by reducing the number of tokens processed per request. The process is complemented by a robust analytics dashboard that tracks optimization metrics, helping developers save money and stay within token limits while maintaining code quality.
+
 ## ✨ Features
 
 - **📝 Add to Box**: Select code and add it to a centralized file (default: `box.txt`)

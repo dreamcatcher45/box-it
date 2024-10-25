@@ -1,7 +1,5 @@
 # Change Log
 
-All notable changes to the "Box It" extension will be documented in this file.
-
 ## [0.0.3] - 2024-10-25
 
 ### Added
